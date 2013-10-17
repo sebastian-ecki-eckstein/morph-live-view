@@ -195,7 +195,7 @@ class morph_live_view:
         newmarker = QgsRubberBand(self.canvas,QGis.Polygon)
         #QgsVertexMarker(self.canvas)
         self.anzvehicle = self.anzvehicle + 1
-        self.vehicle_list.append([name,0,QColor(0,255,0),1,"Pi",newrubberband, newmarker])
+        self.vehicle_list.append([name,0,QColor(0,255,0),1000,"Pi",newrubberband, newmarker])
 
     def colorvehicle(self):
         print "change vehicle color"
@@ -272,7 +272,7 @@ class morph_live_view:
         packet = self.s.recv(80)
         getrennt = packet.split(',')
         if getrennt[0] == "$PISE" and getrennt[10] == "00.0*ff\n":
-          #print "Vehicle: "+getrennt[1]+", Latitude: "+getrennt[2]+", Longtitude: "+getrennt[3]+", Yaw: "+getrennt[8]+", Date: "+getrennt[4]+", Time: "+getrennt[5]
+          print "Vehicle: "+getrennt[1]+", Latitude: "+getrennt[2]+", Longtitude: "+getrennt[3]+", Yaw: "+getrennt[8]+", Date: "+getrennt[4]+", Time: "+getrennt[5]
           self.sort_paket(getrennt)
         return packet
 
@@ -280,7 +280,7 @@ class morph_live_view:
         packet = self.s_ned.recv(80)
         getrennt = packet.split(',')
         if getrennt[0] == "$PISE" and getrennt[10] == "00.0*ff\n":
-          #print "Vehicle: "+getrennt[1]+", Latitude: "+getrennt[2]+", Longtitude: "+getrennt[3]+", Yaw: "+getrennt[8]+", Date: "+getrennt[4]+", Time: "+getrennt[5]
+          print "Vehicle: "+getrennt[1]+", Latitude: "+getrennt[2]+", Longtitude: "+getrennt[3]+", Yaw: "+getrennt[8]+", Date: "+getrennt[4]+", Time: "+getrennt[5]
           self.sort_paket(getrennt)
         return packet
 
