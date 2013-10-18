@@ -263,7 +263,7 @@ class morph_live_view:
         packet = self.s.recv(80)
         getrennt = packet.split(',')
         if getrennt[0] == "$PISE" and getrennt[10] == "00.0*ff\n":
-          #print "Vehicle: "+getrennt[1]+", Latitude: "+getrennt[2]+", Longtitude: "+getrennt[3]+", Yaw: "+getrennt[8]+", Date: "+getrennt[4]+", Time: "+getrennt[5]
+          print "Vehicle: "+getrennt[1]+", Latitude: "+getrennt[2]+", Longtitude: "+getrennt[3]+", Yaw: "+getrennt[8]+", Date: "+getrennt[4]+", Time: "+getrennt[5]
           self.sort_paket(getrennt)
         return packet
 
@@ -271,7 +271,7 @@ class morph_live_view:
         packet = self.s_ned.recv(80)
         getrennt = packet.split(',')
         if getrennt[0] == "$PISE" and getrennt[10] == "00.0*ff\n":
-          #print "Vehicle: "+getrennt[1]+", Latitude: "+getrennt[2]+", Longtitude: "+getrennt[3]+", Yaw: "+getrennt[8]+", Date: "+getrennt[4]+", Time: "+getrennt[5]
+          print "Vehicle: "+getrennt[1]+", Latitude: "+getrennt[2]+", Longtitude: "+getrennt[3]+", Yaw: "+getrennt[8]+", Date: "+getrennt[4]+", Time: "+getrennt[5]
           self.sort_paket(getrennt)
         return packet
 
