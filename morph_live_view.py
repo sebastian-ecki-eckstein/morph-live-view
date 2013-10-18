@@ -191,11 +191,11 @@ class morph_live_view:
 
     def thread_addvehicle(self,name):
         #print "neues Fahrzeug: "+name
-        newrubberband = QgsRubberBand(self.canvas)
+        newrubberband = QgsRubberBand(self.canvas, False)
         newmarker = QgsRubberBand(self.canvas,QGis.Polygon)
         #QgsVertexMarker(self.canvas)
         self.anzvehicle = self.anzvehicle + 1
-        self.vehicle_list.append([name,0,QColor(0,255,0),1,"Pi",newrubberband, newmarker])
+        self.vehicle_list.append([name,0,QColor(0,255,0),1000,"Pi",newrubberband, newmarker])
 
     def colorvehicle(self):
         print "change vehicle color"
@@ -213,22 +213,13 @@ class morph_live_view:
         j = self.getvehiclelist(name)
         self.vehicle_list[j][5].removeLastPoint()
 
-    def addtrackpointvehicle(self,name,point):
-        #do something
-        j = self.getvehiclelist(name)
-        self.vehicle_list[j][5].setColor(self.vehicle_list[j][2])
-        self.vehicle_list[j][5].addPoint(point)
-
     def addPoint(self, name, pointx, pointy, yaw):
-        #change from point to icon with yaw
+        #create rubberband for vehicle
         j = self.getvehiclelist(name)
-        #self.vehicle_list[j][6].setCenter(QgsPoint(float(pointx),float(pointy)))
-        #self.vehicle_list[j][6].updatePosition
-        self.vehicle_list[j][6].addPoint(QgsPoint(float(pointx)+float(yaw),float(pointy)+float(yaw)))
-        self.vehicle_list[j][6].addPoint(QgsPoint(float(pointx)-float(yaw),float(pointy)-float(yaw)))
-        self.vehicle_list[j][6].addPoint(QgsPoint(float(pointx),float(pointy)))
-        self.addtrackpointvehicle(name,QgsPoint(float(pointx),float(pointy)))
-        #print "Update"
+        #width vielleicht einstellbar machen
+        #self.vehicle_list[j][5].setWidth(5)
+        self.vehicle_list[j][5].setColor(self.vehicle_list[j][2])
+        self.vehicle_list[j][5].addPoint(QgsPoint(float(pointx),float(pointy)), True)
 
     def sort_paket(self,value):
       self.liste.insert(0,[value[1],value[2],value[3],value[8],value[4],value[5]])
