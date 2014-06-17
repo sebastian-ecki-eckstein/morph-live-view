@@ -11,6 +11,7 @@
 [general]
 name=MORPH live view
 qgisMinimumVersion=1.8
+qgisMaximumVersion=2.2.2
 description=MORPH live view
 version=0.1
 author=ecki

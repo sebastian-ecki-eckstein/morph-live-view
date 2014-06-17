@@ -44,20 +44,21 @@ class morph_live_view:
         self.plugin_dir = QFileInfo(QgsApplication.qgisUserDbFilePath()).path() + "/python/plugins/morph_live_view"
         # initialize locale
         localePath = ""
-        locale = QSettings().value("locale/userLocale").toString()[0:2]
+        #locale = QSettings().value("locale/userLocale").toString()[0:2]
         #anzahl vehicle
         self.anzvehicle = 0
         #port
         self.port = 2805  # where do you expect to get a msg?
+        self.mask_ip = "192.168.255.255"
         self.liste = []
         self.vehicle_list = []
         self.max_listen = 10240
         self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.s_ned = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        #self.s.settimeout(0.05)
         self.timer = QTimer()
+        self.lock = -1
         #threads
         self.t = threading.Thread(target=self.thread_read_socket)
-        self.t_ned = threading.Thread(target=self.thread_read_socket_ned)
 
         if QFileInfo(self.plugin_dir).exists():
             localePath = self.plugin_dir + "/i18n/morph_live_view_" + locale + ".qm"
@@ -91,8 +92,7 @@ class morph_live_view:
         if (state==Qt.Checked):
              # enable
              #sockets
-             self.s.bind(("", self.port))
-             self.s_ned.bind(("", self.port + 1))
+             self.s.bind((self.mask_ip, self.port))
              #timer
              self.timer.start(1000)
              #threads
@@ -100,30 +100,20 @@ class morph_live_view:
              self.t_ned_stop = 0
              if self.t.isAlive() == False:
                 self.t.start()
-             if self.t_ned.isAlive() == False:
-                self.t_ned.start()
         else:
              #disable
              #timer
              self.timer.stop()
              #threads
              self.t_stop = 1
-             self.t_ned_stop = 1
              while self.t.isAlive() == True:
                  msg = "ende\n"
                  sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                  sock.sendto(msg, ("127.0.0.1",self.port))
                  sock.close()
                  self.t.join(1)
-             while self.t_ned.isAlive() == True:
-                 msg = "ende\n"
-                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                 sock.sendto(msg, ("127.0.0.1",self.port + 1))
-                 sock.close()
-                 self.t_ned.join(1)
              #sockets
-             self.s.close()
-             self.s_ned.close()
+             #self.s.close()
 
     def unload(self):
         self.changeActive(Qt.Unchecked)
@@ -137,7 +127,7 @@ class morph_live_view:
         #print self.anzvehicle
         count = self.dlg.ui.tableVehicle.rowCount()
         if count < self.anzvehicle:
-          #print "neue Tabellenzeile"
+          print "neue Tabellenzeile"
           self.dlg.ui.tableVehicle.setRowCount(count + 1)
           #print self.vehicle_list[count][0]
           name = QTableWidgetItem(self.vehicle_list[count][0])
@@ -159,6 +149,7 @@ class morph_live_view:
           colorbtn = QPushButton("color")
           self.dlg.ui.tableVehicle.setCellWidget(count, 3, colorbtn)
           colorbtn.clicked.connect(lambda: self.showcolordialog(count))
+        self.iface.mapCanvas().refresh()
 
     def showcolordialog(self,count):
         element = self.vehicle_list[count]
@@ -190,12 +181,13 @@ class morph_live_view:
         self.vehicle_list.insert(count,[element[0],element[1],element[2],value,element[4],element[5],element[6]])
 
     def thread_addvehicle(self,name):
-        #print "neues Fahrzeug: "+name
-        newrubberband = QgsRubberBand(self.canvas, False)
-        newmarker = QgsRubberBand(self.canvas,QGis.Polygon)
+        print "neues Fahrzeug: "+name
+        newrubberband = QgsRubberBand(self.canvas)
+        newmarker = QgsVertexMarker(self.canvas)
+        #QgsRubberBand(self.canvas,QGis.Polygon)
         #QgsVertexMarker(self.canvas)
         self.anzvehicle = self.anzvehicle + 1
-        self.vehicle_list.append([name,0,QColor(0,255,0),1000,"Pi",newrubberband, newmarker])
+        self.vehicle_list.append([name,0,QColor(0,255,0),10,"Pi",newrubberband, newmarker])
 
     def colorvehicle(self):
         print "change vehicle color"
@@ -213,13 +205,27 @@ class morph_live_view:
         j = self.getvehiclelist(name)
         self.vehicle_list[j][5].removeLastPoint()
 
-    def addPoint(self, name, pointx, pointy, yaw):
-        #create rubberband for vehicle
+    def addtrackpointvehicle(self,name,point):
+        #do something
         j = self.getvehiclelist(name)
-        #width vielleicht einstellbar machen
-        #self.vehicle_list[j][5].setWidth(5)
         self.vehicle_list[j][5].setColor(self.vehicle_list[j][2])
-        self.vehicle_list[j][5].addPoint(QgsPoint(float(pointx),float(pointy)), True)
+        self.vehicle_list[j][5].addPoint(point)
+        print "update"
+        #self.iface.mapCanvas().refresh()
+        #self.iface.activeLayer().triggerRepaint()
+
+    def addPoint(self, name, pointx, pointy, yaw):
+        #change from point to icon with yaw
+        j = self.getvehiclelist(name)
+        crsSrc = QgsCoordinateReferenceSystem(self.iface.activeLayer().crs().authid())
+        crsDest = QgsCoordinateReferenceSystem(4326)
+        xform = QgsCoordinateTransform(crsSrc, crsDest)
+        pt1 = QgsPoint(float(pointx),float(pointy))
+        pt2 = xform.transform(pt1, QgsCoordinateTransform.ReverseTransform)
+        self.vehicle_list[j][6].setColor(self.vehicle_list[j][2])
+        self.vehicle_list[j][6].setCenter(pt2)
+        self.addtrackpointvehicle(name,pt2)
+        #print "Update"
 
     def sort_paket(self,value):
       self.liste.insert(0,[value[1],value[2],value[3],value[8],value[4],value[5]])
@@ -260,18 +266,12 @@ class morph_live_view:
         return j
 
     def read_socket(self):
-        packet = self.s.recv(80)
+        print "read packet"
+        packet = self.s.recv(128)
+        print packet
         getrennt = packet.split(',')
         if getrennt[0] == "$PISE" and getrennt[10] == "00.0*ff\n":
-          print "Vehicle: "+getrennt[1]+", Latitude: "+getrennt[2]+", Longtitude: "+getrennt[3]+", Yaw: "+getrennt[8]+", Date: "+getrennt[4]+", Time: "+getrennt[5]
-          self.sort_paket(getrennt)
-        return packet
-
-    def read_socket_ned(self):
-        packet = self.s_ned.recv(80)
-        getrennt = packet.split(',')
-        if getrennt[0] == "$PISE" and getrennt[10] == "00.0*ff\n":
-          print "Vehicle: "+getrennt[1]+", Latitude: "+getrennt[2]+", Longtitude: "+getrennt[3]+", Yaw: "+getrennt[8]+", Date: "+getrennt[4]+", Time: "+getrennt[5]
+          #print "Vehicle: "+getrennt[1]+", Longitude: "+getrennt[2]+", Latitude: "+getrennt[3]+", Yaw: "+getrennt[8]+", Date: "+getrennt[4]+", Time: "+getrennt[5]
           self.sort_paket(getrennt)
         return packet
 
@@ -279,13 +279,8 @@ class morph_live_view:
         print "Thread to read socket started normal"
         while self.t_stop == 0:
           self.read_socket()
+          #time.sleep(0.2)
         print "Thread closed normal"
-
-    def thread_read_socket_ned(self):
-        print "Thread to read socket started ned"
-        while self.t_ned_stop == 0:
-          self.read_socket_ned()
-        print "Thread closed ned"
 
     # run method that performs all the real work
     def run(self):
